@@ -1,0 +1,36 @@
+# A supervisord configuration to run both the CloudHSM daemon and
+# Vault Enterprise in a single container - necessary because for
+# CloudHSM PKCS#11 to work, it needs to talk to a local CloudHSM
+# daemon. Not sure if this is the best way to do it --- for example,
+# would it work to have the CloudHSM daemon run in another container
+# within a pod --- but it seems to be the simplest to start
+
+
+[supervisord]
+nodaemon=true
+
+[program:cloudhsm]
+command=/opt/cloudhsm/bin/cloudhsm_client /opt/cloudhsm/etc/cloudhsm_client.cfg
+priority=500
+stopsignal=HUP
+directory=/opt/cloudhsm/run
+autorestart=true
+user=hsmuser
+stdout_logfile=/dev/fd/1
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/fd/2
+stderr_logfile_maxbytes=0
+
+# We have to do the weird start invocation because Vault starts right away 
+# but cloudhsm takes quite a bit of time to start up and if it's not there
+# when Vault starts Vault will quit
+[program:vault_ent]
+command=sh -c "echo 'Vault waiting for cloudhsm'; sleep 30; exec /bin/vault server -config /vault/config/"
+priority=600
+directory=/vault/file
+autorestart=true
+user=vault
+stdout_logfile=/dev/fd/1
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/fd/2
+stderr_logfile_maxbytes=0

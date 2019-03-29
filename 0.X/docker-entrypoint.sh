@@ -50,7 +50,9 @@ if [ "${1:0:1}" = '-' ]; then
 fi
 
 # Look for Vault subcommands.
-if [ "$1" = 'server' ]; then
+if [ "$1" = 'server-ent-cloudhsm' ]; then
+    exec /usr/bin/supervisord -c /etc/vault_ent_cloudhsm.supervisord
+elif [ "$1" = 'server' ]; then
     shift
     set -- vault server \
         -config="$VAULT_CONFIG_DIR" \
